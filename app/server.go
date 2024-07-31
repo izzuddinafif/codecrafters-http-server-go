@@ -49,19 +49,31 @@ func handleClient(conn net.Conn) {
 	}
 	log.Println("HTTP Request: ", rec)
 
-
 	fullReq = strings.Split(rec, "\r\n")
+	for i, v := range fullReq{
+		fmt.Println(i, v)
+	}
 	req := strings.Split(fullReq[0], " ")
 	//method := req[0]
 	path := req[1]
 	//host := strings.CutPrefix(fullReq[1], "Host: ")
 	//userAgent := strings.CutPrefix(fullreq[2], "User-Agent: ")
-	fmt.Println(path)
+	// if len()
+	// 	body := re
 
-	switch path {
-	case "/":
+	switch  {
+	case path == "/":
 		// Write ok response
 		res = "HTTP/1.1 200 OK\r\n\r\n"
+		_, err = conn.Write([]byte(res))
+		if err != nil {
+			log.Println("Error writing response: ", err)
+			return
+		}
+		log.Println("Response sent: \"", res, "\"")
+	case strings.HasPrefix(path, "/echo/"):
+		str, _ := strings.CutPrefix(path, "/echo/")
+		res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(str), str)
 		_, err = conn.Write([]byte(res))
 		if err != nil {
 			log.Println("Error writing response: ", err)
@@ -76,6 +88,5 @@ func handleClient(conn net.Conn) {
 			return
 		}
 		log.Println("Response sent: \"", res, "\"")
-	}
-	
+	}	
 }
