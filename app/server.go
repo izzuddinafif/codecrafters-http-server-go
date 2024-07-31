@@ -24,24 +24,22 @@ func main() {
 			log.Println("Error accepting connection: ", err)
 			continue
 		}
-		// Handle a client connection
-		handleClient(conn)
+		handleClient(conn) // Handle a client connection
 	}
 }
 
 func handleClient(conn net.Conn) {
-	// Ensure we terminate the connection after we're done
-	defer conn.Close()
+	defer conn.Close() // Ensure we terminate the connection after we're done
 	var (
 		err error
 		res string
+		msg string
 		fullReq []string
 		n int
 	)
 	buf := make([]byte, 1024)
 
-	// Read request
-	n, err = conn.Read(buf)
+	n, err = conn.Read(buf) // Read request
 	rec := string(buf[:n])
 	if err != nil {
 		log.Println("Error reading data: ", err)
@@ -57,23 +55,30 @@ func handleClient(conn net.Conn) {
 	//method := req[0]
 	path := req[1]
 	//host := strings.CutPrefix(fullReq[1], "Host: ")
-	//userAgent := strings.CutPrefix(fullreq[2], "User-Agent: ")
-	// if len()
-	// 	body := re
+	userAgent, _ := strings.CutPrefix(fullReq[3], "User-Agent: ")
+	fmt.Println(userAgent)
 
-	switch  {
+	switch {
 	case path == "/":
-		// Write ok response
 		res = "HTTP/1.1 200 OK\r\n\r\n"
-		_, err = conn.Write([]byte(res))
+		_, err = conn.Write([]byte(res)) // Send response
 		if err != nil {
 			log.Println("Error writing response: ", err)
 			return
 		}
 		log.Println("Response sent: \"", res, "\"")
 	case strings.HasPrefix(path, "/echo/"):
-		str, _ := strings.CutPrefix(path, "/echo/")
-		res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(str), str)
+		msg, _ = strings.CutPrefix(path, "/echo/") // Extract the echo string
+		res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(msg), msg)
+		_, err = conn.Write([]byte(res))
+		if err != nil {
+			log.Println("Error writing response: ", err)
+			return
+		}
+		log.Println("Response sent: \"", res, "\"")
+	case path == "/user-agent":
+		msg = userAgent
+		res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(msg), msg)
 		_, err = conn.Write([]byte(res))
 		if err != nil {
 			log.Println("Error writing response: ", err)
