@@ -74,9 +74,6 @@ func handleClient(conn net.Conn, dir string) {
 				encodings = append(encodings, strings.Trim(w, " "))
 			}
 			fmt.Println(encodings)
-			// if len(encodings) > 1 {
-			// 	moreThanOneEnc := true
-			// }
 		}
 	}
 	switch {
@@ -109,7 +106,7 @@ func handleClient(conn net.Conn, dir string) {
 				msg = b.String()
 				fmt.Println()
 				enc := "gzip"
-				res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\n\r\n", enc)
+				res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\n\r\n%X", enc, b.Bytes())
 			} else {
 				res = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n"
 			}
