@@ -103,7 +103,7 @@ func handleClient(conn net.Conn, dir string) {
 					log.Println("Error closing gzip: ", err)
 					return
 				}
-				comp := b.Bytes()
+				// comp := b.Bytes()
 				msg = b.String()
 				fmt.Println()
 				enc := "gzip"
