@@ -103,10 +103,10 @@ func handleClient(conn net.Conn, dir string) {
 					log.Println("Error closing gzip: ", err)
 					return
 				}
-				msg = b.String()
+				comp := b.Bytes()
 				fmt.Println()
 				enc := "gzip"
-				res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\n\r\n%X", enc, b.Bytes())
+				res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Encoding: %s\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%X", enc, len(comp), comp)
 			} else {
 				res = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n"
 			}
