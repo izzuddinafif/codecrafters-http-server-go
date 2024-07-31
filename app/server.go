@@ -54,8 +54,9 @@ func handleClient(conn net.Conn, dir string) {
 	fullReq = strings.Split(rec, "\r\n")
 	
 	req = strings.Split(fullReq[0], " ")
-	// method := req[0]
+	method := req[0]
 	path = req[1]
+	body := fullReq[len(fullReq)-1]
 	for i, v := range fullReq{
 		fmt.Println(i, v)
 		if strings.HasPrefix(v, "User-Agent: "){
@@ -92,24 +93,42 @@ func handleClient(conn net.Conn, dir string) {
 	case strings.HasPrefix(path, "/files/"):
 		fileName, _ := strings.CutPrefix(path, "/files/") // Extract the filename
 		filePath := filepath.Join(dir, fileName)
-		_, err := os.Stat(filePath)
-		if err == nil {
-			content, err = os.ReadFile(filePath)
+		switch method {
+		case "GET":
+			_, err := os.Stat(filePath)
+			if err == nil {
+				content, err = os.ReadFile(filePath)
+				if err != nil {
+					log.Println("Failed to open file: ", err)
+					return
+				}
+				res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(content), string(content))
+			} 
+			if os.IsNotExist(err) {
+				res = "HTTP/1.1 404 Not Found\r\n\r\n"
+			}
+			_, err = conn.Write([]byte(res))
+				if err != nil {
+					log.Println("Error writing response: ", err)
+					return
+				}
+				log.Println("Response sent: \"", res, "\"")
+		case "POST":
+			content = []byte(body)
+			err = os.WriteFile(filePath, content, 0644)
 			if err != nil {
-				log.Println("Failed to open file: ", err)
+				log.Println("Error writing to file: ", err)
 				return
 			}
-			res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", len(content), string(content))
-		} 
-		if os.IsNotExist(err) {
-			res = "HTTP/1.1 404 Not Found\r\n\r\n"
+			res = "HTTP/1.1 201 Created\r\n\r\n"
+			_, err = conn.Write([]byte(res))
+				if err != nil {
+					log.Println("Error writing response: ", err)
+					return
+				}
+				log.Println("Response sent: \"", res, "\"")
 		}
-		_, err = conn.Write([]byte(res))
-			if err != nil {
-				log.Println("Error writing response: ", err)
-				return
-			}
-			log.Println("Response sent: \"", res, "\"")
+		
 		
 	default:
 		res = "HTTP/1.1 404 Not Found\r\n\r\n"
