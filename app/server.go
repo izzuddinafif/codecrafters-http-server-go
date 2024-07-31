@@ -83,6 +83,7 @@ func handleClient(conn net.Conn, dir string) {
 	case strings.HasPrefix(path, "/echo/"):
 		msg, _ = strings.CutPrefix(path, "/echo/") // Extract the echo string
 		var b bytes.Buffer
+		res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(msg), msg)
 		if encFlag {
 			if enc == "gzip"{
 				gz := gzip.NewWriter(&b)
@@ -97,10 +98,12 @@ func handleClient(conn net.Conn, dir string) {
 					return
 				}
 				msg = b.String()
-				fmt.Println(msg)
+				fmt.Println()
+				res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\n\r\n", enc)
+			} else {
+				res = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n"
 			}
 		}
-		res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\n\r\n", enc)
 		_, err = conn.Write([]byte(res))
 		if err != nil {
 			log.Println("Error writing response: ", err)
