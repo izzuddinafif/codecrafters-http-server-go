@@ -34,6 +34,7 @@ func handleClient(conn net.Conn) {
 		err error
 		res string
 		msg string
+		userAgent string
 		fullReq []string
 		n int
 	)
@@ -48,15 +49,22 @@ func handleClient(conn net.Conn) {
 	log.Println("HTTP Request: ", rec)
 
 	fullReq = strings.Split(rec, "\r\n")
+	
+	req := strings.Split(fullReq[0], " ")
+	fmt.Println(req)
+	// method := req[0]
+	path := req[1]
+	fmt.Println(path)
 	for i, v := range fullReq{
 		fmt.Println(i, v)
+		if strings.HasPrefix(v, "User-Agent: "){
+			userAgent, _ = strings.CutPrefix(v, "User-Agent: ")
+			fmt.Println(userAgent)
+		}
 	}
-	req := strings.Split(fullReq[0], " ")
-	//method := req[0]
-	path := req[1]
-	//host := strings.CutPrefix(fullReq[1], "Host: ")
-	userAgent, _ := strings.CutPrefix(fullReq[3], "User-Agent: ")
-	fmt.Println(userAgent)
+	
+	// userAgent, _ := strings.CutPrefix(fullReq[3], "User-Agent: ")
+	// fmt.Println(userAgent)
 
 	switch {
 	case path == "/":
@@ -78,6 +86,7 @@ func handleClient(conn net.Conn) {
 		log.Println("Response sent: \"", res, "\"")
 	case path == "/user-agent":
 		msg = userAgent
+		fmt.Println(msg)
 		res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(msg), msg)
 		_, err = conn.Write([]byte(res))
 		if err != nil {
