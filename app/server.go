@@ -69,7 +69,11 @@ func handleClient(conn net.Conn, dir string) {
 		if strings.HasPrefix(v, "Accept-Encoding: "){
 			encFlag = true
 			temp, _ := strings.CutPrefix(fullReq[i], "Accept-Encoding: ")
-			encodings = strings.Split(temp, ",")
+			encs := strings.Split(temp, ",")
+			for _, w := range encs{
+				encodings = append(encodings, strings.Trim(w, " "))
+			}
+			fmt.Println(encodings)
 			// if len(encodings) > 1 {
 			// 	moreThanOneEnc := true
 			// }
@@ -90,6 +94,7 @@ func handleClient(conn net.Conn, dir string) {
 		res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(msg), msg)
 		if encFlag {
 			if slices.Contains(encodings, "gzip"){
+				fmt.Println("hey im here")
 				gz := gzip.NewWriter(&b)
 				defer gz.Close()
 				_, err = gz.Write([]byte(msg)) // Compress the data
