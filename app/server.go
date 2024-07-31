@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"compress/gzip"
 	"bytes"
-	// "io/ioutil"
+	"slices"
 )
 
 func main() {
@@ -39,9 +39,9 @@ func handleClient(conn net.Conn, dir string) {
 	defer conn.Close() // Ensure we terminate the connection after we're done
 	var (
 		err error
-		res, msg, path, userAgent, enc string
+		res, msg, path, userAgent string
 		content []byte
-		fullReq, req []string
+		fullReq, req, encodings []string
 		n int
 		encFlag bool
 	)
@@ -61,14 +61,18 @@ func handleClient(conn net.Conn, dir string) {
 	method := req[0]
 	path = req[1]
 	body := fullReq[len(fullReq)-1]
-	for _, v := range fullReq{
+	for i, v := range fullReq{
 		// fmt.Println(i, v)
 		if strings.HasPrefix(v, "User-Agent: "){
 			userAgent, _ = strings.CutPrefix(v, "User-Agent: ")
 		}
 		if strings.HasPrefix(v, "Accept-Encoding: "){
-			enc, _ = strings.CutPrefix(v, "Accept-Encoding: ")
 			encFlag = true
+			temp, _ := strings.CutPrefix(fullReq[i], "Accept-Encoding: ")
+			encodings = strings.Split(temp, ",")
+			// if len(encodings) > 1 {
+			// 	moreThanOneEnc := true
+			// }
 		}
 	}
 	switch {
@@ -85,7 +89,7 @@ func handleClient(conn net.Conn, dir string) {
 		var b bytes.Buffer
 		res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(msg), msg)
 		if encFlag {
-			if enc == "gzip"{
+			if slices.Contains(encodings, "gzip"){
 				gz := gzip.NewWriter(&b)
 				defer gz.Close()
 				_, err = gz.Write([]byte(msg)) // Compress the data
@@ -99,6 +103,7 @@ func handleClient(conn net.Conn, dir string) {
 				}
 				msg = b.String()
 				fmt.Println()
+				enc := "gzip"
 				res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\n\r\n", enc)
 			} else {
 				res = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n"
