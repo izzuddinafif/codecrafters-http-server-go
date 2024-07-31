@@ -32,7 +32,7 @@ func handleClient(conn net.Conn) {
 	// Ensure we terminate the connection after we're done
 	defer conn.Close()
 
-	response := "HTTP/1.1 200 OK\r\n"
+	response := "HTTP/1.1 200 OK\r\n\r\n"
 
 	/*// Read data
 	n, err := conn.Read(buf)
