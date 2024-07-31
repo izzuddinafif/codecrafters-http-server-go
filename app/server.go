@@ -2,26 +2,51 @@ package main
 
 import (
 	"fmt"
-	// Uncomment this block to pass the first stage
 	"net"
 	"os"
+	"log"
 )
 
 func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	fmt.Println("Logs from your program will appear here!")
+	fmt.Println("This is my own HTTP Server Program, It's now up and running! :D")
 
-	// Uncomment this block to pass the first stage
-	
-	l, err := net.Listen("tcp", "0.0.0.0:4221")
+	listener, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
-		fmt.Println("Failed to bind to port 4221")
+		log.Println("Failed to bind to port 4221: ", err)
 		os.Exit(1)
 	}
-	
-	_, err = l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
+	defer listener.Close() // Ensure we close the server when the program exists
+
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Println("Error accepting connection: ", err)
+			continue
+		}
+		// Handle a client connection
+		handleClient(conn)
 	}
+}
+
+func handleClient(conn net.Conn) {
+	// Ensure we terminate the connection after we're done
+	defer conn.Close()
+
+	response := "HTTP/1.1 200 OK\r\n"
+
+	/*// Read data
+	n, err := conn.Read(buf)
+	if err != nil {
+		log.Println("Error reading data: " err)
+		return
+	}
+	log.Println("Received data: ",, buf[:n])*/
+
+	// Write data
+	n, err := conn.Write([]byte(response))
+	if err != nil {
+		log.Println("Error writing response: ", err)
+		return
+	}
+	log.Println(n, "bytes sent:\"", response, "\"")
 }
