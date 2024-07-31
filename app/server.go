@@ -8,6 +8,9 @@ import (
 	"strings"
 	"flag"
 	"path/filepath"
+	"compress/gzip"
+	"bytes"
+	// "io/ioutil"
 )
 
 func main() {
@@ -36,10 +39,11 @@ func handleClient(conn net.Conn, dir string) {
 	defer conn.Close() // Ensure we terminate the connection after we're done
 	var (
 		err error
-		res, msg, path, userAgent string
+		res, msg, path, userAgent, enc string
 		content []byte
 		fullReq, req []string
 		n int
+		encFlag bool
 	)
 	buf := make([]byte, 1024)
 
@@ -57,10 +61,14 @@ func handleClient(conn net.Conn, dir string) {
 	method := req[0]
 	path = req[1]
 	body := fullReq[len(fullReq)-1]
-	for i, v := range fullReq{
-		fmt.Println(i, v)
+	for _, v := range fullReq{
+		// fmt.Println(i, v)
 		if strings.HasPrefix(v, "User-Agent: "){
 			userAgent, _ = strings.CutPrefix(v, "User-Agent: ")
+		}
+		if strings.HasPrefix(v, "Accept-Encoding: "){
+			enc, _ = strings.CutPrefix(v, "Accept-Encoding: ")
+			encFlag = true
 		}
 	}
 	switch {
@@ -74,7 +82,25 @@ func handleClient(conn net.Conn, dir string) {
 		log.Println("Response sent: \"", res, "\"")
 	case strings.HasPrefix(path, "/echo/"):
 		msg, _ = strings.CutPrefix(path, "/echo/") // Extract the echo string
-		res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(msg), msg)
+		var b bytes.Buffer
+		if encFlag {
+			if enc == "gzip"{
+				gz := gzip.NewWriter(&b)
+				defer gz.Close()
+				_, err = gz.Write([]byte(msg)) // Compress the data
+				if err != nil {
+					log.Println("Error compressing data: ", err)
+					return
+				}
+				if err = gz.Close(); err != nil {
+					log.Println("Error closing gzip: ", err)
+					return
+				}
+				msg = b.String()
+				fmt.Println(msg)
+			}
+		}
+		res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\n\r\n", enc)
 		_, err = conn.Write([]byte(res))
 		if err != nil {
 			log.Println("Error writing response: ", err)
@@ -128,8 +154,6 @@ func handleClient(conn net.Conn, dir string) {
 				}
 				log.Println("Response sent: \"", res, "\"")
 		}
-		
-		
 	default:
 		res = "HTTP/1.1 404 Not Found\r\n\r\n"
 		_, err = conn.Write([]byte(res))
