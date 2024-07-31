@@ -1,16 +1,16 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
+	"flag"
 	"fmt"
+	"log"
 	"net"
 	"os"
-	"log"
-	"strings"
-	"flag"
 	"path/filepath"
-	"compress/gzip"
-	"bytes"
 	"slices"
+	"strings"
 )
 
 func main() {
@@ -68,12 +68,9 @@ func handleClient(conn net.Conn, dir string) {
 		}
 		if strings.HasPrefix(v, "Accept-Encoding: "){
 			encFlag = true
-			temp, _ := strings.CutPrefix(fullReq[i], "Accept-Encoding: ")
-			encs := strings.Split(temp, ",")
-			for _, w := range encs{
+			for _, w := range strings.Split(strings.TrimPrefix(fullReq[i], "Accept-Encoding: "), ",") {
 				encodings = append(encodings, strings.Trim(w, " "))
 			}
-			fmt.Println(encodings)
 		}
 	}
 	switch {
@@ -103,9 +100,7 @@ func handleClient(conn net.Conn, dir string) {
 					log.Println("Error closing gzip: ", err)
 					return
 				}
-				// comp := b.Bytes()
 				msg = b.String()
-				fmt.Println()
 				enc := "gzip"
 				res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Encoding: %s\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", enc, len(msg), msg)
 			} else {
